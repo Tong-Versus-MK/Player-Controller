@@ -1,5 +1,5 @@
 #include <Arduino.h>
- 
+#include <math.h>
 #define RED 33
 #define UP 19
 #define LEFT 18
@@ -8,6 +8,12 @@
 
 
 int cnt = 0;
+
+int diceRoll(){
+  int dice = (int)ceil(((double)esp_random()/4294967295)*6);
+  return dice;
+}
+
 
 void setup() {
     Serial.begin(115200);

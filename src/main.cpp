@@ -11,6 +11,14 @@
 
 #define BUTTON 19
 
+int MAZE[BOARD_SIZE][BOARD_SIZE] = {
+    {0,1,0,0,0,0},
+    {0,1,0,1,1,0},
+    {0,0,0,1,1,0},
+    {1,1,0,0,0,0},
+    {0,0,0,0,1,0},
+    {0,0,1,0,1,0}
+};
 
 Bounce debouncer_up = Bounce(), debouncer_left = Bounce(), debouncer_down = Bounce(), debouncer_right = Bounce(), debouncer_btn = Bounce();
 int move_count = 0;
@@ -20,6 +28,32 @@ int x = 0,y = 0;
 int diceRoll(){
   int dice = (int)ceil(((double)esp_random()/4294967295)*6);
   return dice;
+}
+
+int switchIsPresssed(int selected_swtich){
+    if(selected_swtich != -1)
+        return !digitalRead(selected_swtich);
+    return !digitalRead(UP) || !digitalRead(LEFT) || !digitalRead(DOWN) || !digitalRead(RIGHT);
+}
+
+void printMaze(){
+    Serial.println("# # # # # # # #");
+    for(int i=0;i<BOARD_SIZE;i++){
+        Serial.print("# ");
+        for(int j=0;j<BOARD_SIZE;j++){
+            if(MAZE[i][j]){
+                Serial.print("# ");    
+            }
+            else if(i == y && j == x){
+                Serial.print("x ");
+            }
+            else{
+                Serial.print(". ");
+            }
+        }
+        Serial.println("#");
+    }
+    Serial.println("# # # # # # # #");
 }
 
 void setup() {
@@ -37,12 +71,8 @@ void setup() {
     debouncer_down.interval(25);
     debouncer_right.interval(25);
     debouncer_btn.interval(25);
-}
 
-int switchIsPresssed(int selected_swtich){
-    if(selected_swtich != -1)
-        return !digitalRead(selected_swtich);
-    return !digitalRead(UP) || !digitalRead(LEFT) || !digitalRead(DOWN) || !digitalRead(RIGHT);
+    printMaze();
 }
 
 void loop() {
@@ -52,7 +82,7 @@ void loop() {
     debouncer_right.update();
     debouncer_btn.update();
 
-    if(debouncer_btn.fell()){
+    if(debouncer_btn.fell() && !diced){
         diced = 1;
         move_count = diceRoll();
         Serial.print("You got ");
@@ -65,7 +95,7 @@ void loop() {
         }
         else{
             if(debouncer_up.fell()){
-                if(y <= 0){
+                if(y <= 0 || MAZE[y-1][x]){
                     Serial.print("You hit the wall! -1 HP | ");
                 }
                 else{
@@ -73,7 +103,7 @@ void loop() {
                 }
             }
             if(debouncer_left.fell()){
-                if(x <= 0){
+                if(x <= 0 || MAZE[y][x-1]){
                     Serial.print("You hit the wall! -1 HP | ");
                 }
                 else{
@@ -81,7 +111,7 @@ void loop() {
                 }
             }
             if(debouncer_down.fell()){
-                if(y >= BOARD_SIZE - 1){
+                if(y >= BOARD_SIZE - 1 || MAZE[y+1][x]){
                     Serial.print("You hit the wall! -1 HP | ");
                 }
                 else{
@@ -89,7 +119,7 @@ void loop() {
                 }
             }
             if(debouncer_right.fell()){
-                if(x >= BOARD_SIZE - 1){
+                if(x >= BOARD_SIZE - 1 || MAZE[y][x+1]){
                     Serial.print("You hit the wall! -1 HP | ");
                 }
                 else{
@@ -110,5 +140,8 @@ void loop() {
                 diced = 0;
             }
         }
+    }
+    if(debouncer_up.fell() || debouncer_left.fell() || debouncer_right.fell() || debouncer_down.fell() || debouncer_btn.fell()){
+        printMaze();   
     }
 }

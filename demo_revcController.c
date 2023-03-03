@@ -7,6 +7,7 @@ typedef struct struct_message {
   int x;
   int y;
   int wall_hit;
+  int move_count;
 } struct_message;
 
 struct_message income_mess;
@@ -14,7 +15,7 @@ int player;
 int pos_x;
 int pos_y;
 int wall_hit;
-volatile int walked;
+int move_count;
 
 String success;
 esp_now_peer_info_t peerInfo;
@@ -30,6 +31,7 @@ void OnDataRecv(const uint8_t* mac, const uint8_t* incomingData, int len) {
   pos_x = income_mess.x;
   pos_y = income_mess.y;
   wall_hit = income_mess.wall_hit;
+  move_count = income_mess.move_count;
   Serial.print("Player: ");
   Serial.println(player);
   Serial.print("Pos_x: ");
@@ -38,7 +40,8 @@ void OnDataRecv(const uint8_t* mac, const uint8_t* incomingData, int len) {
   Serial.println(pos_y);
   Serial.print("Wall_Hit: ");
   Serial.println(wall_hit);
-  walked = 1;
+  Serial.print("Move_count: ");
+  Serial.println(move_count);
 }
 
 void setup() {
@@ -67,10 +70,5 @@ void setup() {
 }
 
 void loop() {
-  Serial.println("Start...");
-  Serial.println("Wait for walk..");
-  walked = 0;
-  while (!walked)
-    ;
   // put your main code here, to run repeatedly:
 }

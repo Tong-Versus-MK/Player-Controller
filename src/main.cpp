@@ -35,6 +35,7 @@ typedef struct struct_message {
     int x;
     int y;
     int wall_hit;
+    int move_count;
 } struct_message;
 
 struct_message pos_mess;
@@ -53,6 +54,22 @@ void OnDataSent(const uint8_t* mac_addr, esp_now_send_status_t status) {
     }
     else {
         success = "Delivery Fail :(";
+    }
+}
+
+void SendData(int player, int x, int y, int wall_hit, int move_count) {
+    pos_mess.player = player;
+    pos_mess.x = x;
+    pos_mess.y = y;
+    pos_mess.wall_hit = wall_hit;
+    pos_mess.move_count = move_count;
+    esp_err_t result = esp_now_send(broadcastAddress, (uint8_t*)&pos_mess, sizeof(pos_mess));
+
+    if (result == ESP_OK) {
+        Serial.println("Sent with success");
+    }
+    else {
+        Serial.println("Error sending the data");
     }
 }
 /* ESP-NOW Communication Setup END*/
@@ -194,20 +211,10 @@ void loop() {
             Serial.print(") | ");
             Serial.print(move_count);
             Serial.println(" Move left");
-
+            SendData(player, x, y, wall_hit, move_count);
             if (move_count == 0) {
-                pos_mess.player = player;
-                pos_mess.x = x;
-                pos_mess.y = y;
-                pos_mess.wall_hit = wall_hit;
-                esp_err_t result = esp_now_send(broadcastAddress, (uint8_t*)&pos_mess, sizeof(pos_mess));
-
-                if (result == ESP_OK) {
-                    Serial.println("Sent with success");
-                }
-                else {
-                    Serial.println("Error sending the data");
-                }
+                diced = 0;
+                wall_hit = 0;
             }
         }
     }

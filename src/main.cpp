@@ -22,12 +22,15 @@ int MAZE[BOARD_SIZE][BOARD_SIZE] = {
     {0,0,1,0,1,0}
 };
 
+void walk_mode();
+void duel_mode();
+
 Bounce debouncer_up = Bounce(), debouncer_left = Bounce(), debouncer_down = Bounce(), debouncer_right = Bounce(), debouncer_btn = Bounce();
 int move_count = 0;
 int diced = 0;
-int x = 5, y = 5;
+int x = 0, y = 0;
 int wall_hit = 0;
-const int player = 1;
+const int player = 0;
 int turn = 0;
 int mode = 0;
 
@@ -72,10 +75,16 @@ void OnDataRecv(const uint8_t* mac, const uint8_t* incomingData, int len) {
     memcpy(&recv_mess, incomingData, sizeof(recv_mess));
     //Serial.print("Bytes received: ");
     //Serial.println(len);
-    turn = recv_mess.turn;
-    if (turn == player)
-        printf("Your turn please roll your dice to walk\n");
+    if (mode == 0 && recv_mess.mode == 1)
+        printf("IT'S TIME FOR D..Du..Duel!!!\n");
     mode = recv_mess.mode;
+    turn = recv_mess.turn;
+    if (turn == player) {
+        if (mode == 0)
+            printf("Your turn please roll your dice to walk.\n");
+        else if (mode == 1)
+            printf("Your turn please roll your dice to attack.\n");
+    }
 }
 
 void SendData(int player, int x, int y, int wall_hit, int move_count) {
@@ -83,7 +92,7 @@ void SendData(int player, int x, int y, int wall_hit, int move_count) {
     pos_mess.x = x;
     pos_mess.y = y;
     pos_mess.wall_hit = wall_hit;
-    pos_mess.move_count = move_count;
+    pos_mess.move_count = move_count;//in duel mode this value is dice value for attack
     esp_err_t result = esp_now_send(broadcastAddress, (uint8_t*)&pos_mess, sizeof(pos_mess));
 
     if (result == ESP_OK) {
@@ -170,6 +179,24 @@ void setup() {
 }
 
 void loop() {
+    if (mode == 0)
+        walk_mode();
+    else if (mode == 1)
+        duel_mode();
+    else if (mode == 2) {
+        printf("Game Reset!\n");
+        move_count = 0;
+        diced = 0;
+        x = 0;
+        y = 0;
+        wall_hit = 0;
+        turn = 0;
+        mode = 0;
+    }
+}
+
+
+void walk_mode() {
     debouncer_up.update();
     debouncer_left.update();
     debouncer_down.update();
@@ -195,7 +222,7 @@ void loop() {
             if (debouncer_up.fell()) {
                 if (y <= 0 || MAZE[y - 1][x]) {
                     Serial.print("You hit the wall! -1 HP | ");
-                    wall_hit++;
+                    wall_hit = 1;
                 }
                 else {
                     y--;
@@ -204,7 +231,7 @@ void loop() {
             if (debouncer_left.fell()) {
                 if (x <= 0 || MAZE[y][x - 1]) {
                     Serial.print("You hit the wall! -1 HP | ");
-                    wall_hit++;
+                    wall_hit = 1;
                 }
                 else {
                     x--;
@@ -213,7 +240,7 @@ void loop() {
             if (debouncer_down.fell()) {
                 if (y >= BOARD_SIZE - 1 || MAZE[y + 1][x]) {
                     Serial.print("You hit the wall! -1 HP | ");
-                    wall_hit++;
+                    wall_hit = 1;
                 }
                 else {
                     y++;
@@ -222,7 +249,7 @@ void loop() {
             if (debouncer_right.fell()) {
                 if (x >= BOARD_SIZE - 1 || MAZE[y][x + 1]) {
                     Serial.print("You hit the wall! -1 HP | ");
-                    wall_hit++;
+                    wall_hit = 1;
                 }
                 else {
                     x++;
@@ -241,11 +268,29 @@ void loop() {
             if (move_count == 0) {
                 diced = 0;
                 wall_hit = 0;
-                turn = 0;
+                turn = 1;
             }
         }
     }
     if (debouncer_up.fell() || debouncer_left.fell() || debouncer_right.fell() || debouncer_down.fell() || debouncer_btn.fell()) {
         printMaze();
+    }
+}
+
+void duel_mode() {
+    //debouncer_up.update();
+    //debouncer_left.update();
+    //debouncer_down.update();
+    //debouncer_right.update();
+    debouncer_btn.update();
+
+    if ((turn != player) && debouncer_btn.fell()) {
+        printf("Not your turn!\n");
+    }
+    else if (debouncer_btn.fell()) {
+        move_count = diceRoll();
+        printf("Attack with %d dmg\n", move_count);
+        SendData(player, x, y, -1, move_count);
+        turn = 1;
     }
 }

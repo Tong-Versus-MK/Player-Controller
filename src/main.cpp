@@ -3,6 +3,10 @@
 #include <Bounce2.h>
 #include <WiFi.h>
 #include <esp_now.h>
+#include <SPI.h>
+#include <Wire.h>
+#include <Adafruit_GFX.h>
+#include <Adafruit_SSD1306.h>
 
 #define BOARD_SIZE 6
 
@@ -12,6 +16,11 @@
 #define RIGHT 33
 
 #define BUTTON 19
+
+#define SCREEN_WIDTH 128 // pixel ความกว้าง
+#define SCREEN_HEIGHT 64 // pixel ความสูง 
+#define OLED_RESET     -1
+Adafruit_SSD1306 OLED(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 
 int MAZE[BOARD_SIZE][BOARD_SIZE] = {
     {0,1,0,0,0,0},
@@ -28,9 +37,9 @@ void duel_mode();
 Bounce debouncer_up = Bounce(), debouncer_left = Bounce(), debouncer_down = Bounce(), debouncer_right = Bounce(), debouncer_btn = Bounce();
 int move_count = 0;
 int diced = 0;
-int x = 0, y = 0;//tong 0,0 / MK 5,5
+int x = 5, y = 5;//tong 0,0 / MK 5,5
 int wall_hit = 0;
-const int player = 0;//tong 0 / MK 1
+const int player = 1;//tong 0 / MK 1
 int turn = 0;
 int mode = 0;
 int hp = 30;
@@ -100,6 +109,8 @@ void OnDataRecv(const uint8_t* mac, const uint8_t* incomingData, int len) {
     printf("Player %d\n", player);
     printf("HP: %d\n", hp);
     printf("ATK: %d\n", atk);
+    printf("Turn: %d\n", turn);
+    printf("Mode: %d\n", mode);
 }
 
 void SendData(int player, int x, int y, int wall_hit, int move_count) {
@@ -153,6 +164,12 @@ void printMaze() {
 void setup() {
     Serial.begin(115200);
     Serial.println("Start...");
+    
+    if (!OLED.begin(SSD1306_SWITCHCAPVCC, 0x3C)) { // สั่งให้จอ OLED เริ่มทำงานที่ Address 0x3C
+    Serial.println("SSD1306 allocation failed");
+    } else {
+      Serial.println("ArdinoAll OLED Start Work !!!");
+    }
 
     debouncer_up.attach(UP, INPUT_PULLUP);
     debouncer_left.attach(LEFT, INPUT_PULLUP);
@@ -193,6 +210,8 @@ void setup() {
     printMaze();
 }
 
+int yourDice;
+
 void loop() {
     if (mode == 0)
         walk_mode();
@@ -206,13 +225,33 @@ void loop() {
         printf("Game Reset!\n");
         move_count = 0;
         diced = 0;
-        x = 0; //tong 0 / MK 5
-        y = 0; //tong 0 / MK 5
+        x = 5; //tong 0 / MK 5
+        y = 5; //tong 0 / MK 5
         wall_hit = 0;
         turn = 0;
         mode = 0;
         printMaze();
     }
+
+    
+    OLED.clearDisplay(); // ลบภาพในหน้าจอทั้งหมด
+    OLED.setTextColor(WHITE, BLACK);  //กำหนดข้อความสีขาว ฉากหลังสีดำ
+    OLED.setCursor(0, 0); // กำหนดตำแหน่ง x,y ที่จะแสดงผล
+    OLED.setTextSize(2); // กำหนดขนาดตัวอักษร
+    OLED.print("Player : ");
+    OLED.println(player);
+    OLED.setTextSize(1);
+    OLED.print("ATK : ");
+    OLED.println(atk);
+    OLED.print("HP : ");
+    OLED.println(hp);
+    OLED.print("Your Dice : ");
+    OLED.println(yourDice);
+    OLED.print("Move Count : ");
+    OLED.println(move_count);
+    OLED.print("Turn Player : ");
+    OLED.println(turn);
+    OLED.display(); // สั่งให้จอแสดงผล
 }
 
 
@@ -229,6 +268,7 @@ void walk_mode() {
     else if (debouncer_btn.fell() && !diced) {
         diced = 1;
         move_count = diceRoll();
+        yourDice = move_count;
         Serial.print("You got ");
         Serial.print(move_count);
         Serial.println(" count");
@@ -288,7 +328,7 @@ void walk_mode() {
             if (move_count == 0) {
                 diced = 0;
                 wall_hit = 0;
-                turn = 1; // tong 1 / MK 0
+                turn = 0; // tong 1 / MK 0
             }
         }
     }
@@ -309,8 +349,9 @@ void duel_mode() {
     }
     else if (debouncer_btn.fell()) {
         move_count = diceRoll();
+        yourDice = move_count;
         printf("Attack with %d dmg\n", move_count);
         SendData(player, x, y, -1, move_count);
-        turn = 1; //tong 1 / MK 0
+        turn = 0; //tong 1 / MK 0
     }
 }

@@ -25,9 +25,11 @@ int MAZE[BOARD_SIZE][BOARD_SIZE] = {
 Bounce debouncer_up = Bounce(), debouncer_left = Bounce(), debouncer_down = Bounce(), debouncer_right = Bounce(), debouncer_btn = Bounce();
 int move_count = 0;
 int diced = 0;
-int x = 0, y = 0;
+int x = 5, y = 5;
 int wall_hit = 0;
-const int player = 0;
+const int player = 1;
+int turn = 0;
+int mode = 0;
 
 /* ESP-NOW Communication Setup Start*/
 typedef struct struct_message {
@@ -38,7 +40,15 @@ typedef struct struct_message {
     int move_count;
 } struct_message;
 
+//turn 0=Tong 1=MK
+//mode 0=walk 1=Duel 2=End
+typedef struct recv_message {
+    int turn;
+    int mode;
+} recv_message;
+
 struct_message pos_mess;
+recv_message recv_mess;
 
 String success;
 esp_now_peer_info_t peerInfo;
@@ -55,6 +65,17 @@ void OnDataSent(const uint8_t* mac_addr, esp_now_send_status_t status) {
     else {
         success = "Delivery Fail :(";
     }
+}
+
+// Callback when data is recieve
+void OnDataRecv(const uint8_t* mac, const uint8_t* incomingData, int len) {
+    memcpy(&recv_mess, incomingData, sizeof(recv_mess));
+    //Serial.print("Bytes received: ");
+    //Serial.println(len);
+    turn = recv_mess.turn;
+    if (turn == player)
+        printf("Your turn please roll your dice to walk\n");
+    mode = recv_mess.mode;
 }
 
 void SendData(int player, int x, int y, int wall_hit, int move_count) {
@@ -143,6 +164,8 @@ void setup() {
         return;
     }
 
+    esp_now_register_recv_cb(OnDataRecv);
+
     printMaze();
 }
 
@@ -153,7 +176,10 @@ void loop() {
     debouncer_right.update();
     debouncer_btn.update();
 
-    if (debouncer_btn.fell() && !diced) {
+    if ((turn != player) && (debouncer_btn.fell() || debouncer_up.fell() || debouncer_left.fell() || debouncer_right.fell() || debouncer_down.fell())) {
+        printf("Not your turn!\n");
+    }
+    else if (debouncer_btn.fell() && !diced) {
         diced = 1;
         move_count = diceRoll();
         Serial.print("You got ");
@@ -215,6 +241,7 @@ void loop() {
             if (move_count == 0) {
                 diced = 0;
                 wall_hit = 0;
+                turn = 0;
             }
         }
     }

@@ -28,11 +28,13 @@ void duel_mode();
 Bounce debouncer_up = Bounce(), debouncer_left = Bounce(), debouncer_down = Bounce(), debouncer_right = Bounce(), debouncer_btn = Bounce();
 int move_count = 0;
 int diced = 0;
-int x = 5, y = 5;//tong 0,0 / MK 5,5
+int x = 0, y = 0;//tong 0,0 / MK 5,5
 int wall_hit = 0;
-const int player = 1;//tong 0 / MK 1
+const int player = 0;//tong 0 / MK 1
 int turn = 0;
 int mode = 0;
+int hp = 30;
+int atk = 0;
 
 /* ESP-NOW Communication Setup Start*/
 typedef struct struct_message {
@@ -48,6 +50,10 @@ typedef struct struct_message {
 typedef struct recv_message {
     int turn;
     int mode;
+    int stat_owner;
+    int stat_hp;
+    int stat_atk;
+
 } recv_message;
 
 struct_message pos_mess;
@@ -75,16 +81,25 @@ void OnDataRecv(const uint8_t* mac, const uint8_t* incomingData, int len) {
     memcpy(&recv_mess, incomingData, sizeof(recv_mess));
     //Serial.print("Bytes received: ");
     //Serial.println(len);
+
     if (mode == 0 && recv_mess.mode == 1)
         printf("IT'S TIME FOR D..Du..Duel!!!\n");
-    mode = recv_mess.mode;
     turn = recv_mess.turn;
     if (turn == player) {
-        if (mode == 0)
+        if (recv_mess.mode == 0 && mode == 1)
             printf("Your turn please roll your dice to walk.\n");
-        else if (mode == 1)
+        else if (recv_mess.mode == 1 && mode == 0)
             printf("Your turn please roll your dice to attack.\n");
     }
+    mode = recv_mess.mode;
+
+    if (recv_mess.stat_owner == player || recv_mess.stat_owner == 2) {
+        hp = recv_mess.stat_hp;
+        atk = recv_mess.stat_atk;
+    }
+    printf("Player %d\n", player);
+    printf("HP: %d\n", hp);
+    printf("ATK: %d\n", atk);
 }
 
 void SendData(int player, int x, int y, int wall_hit, int move_count) {
@@ -191,8 +206,8 @@ void loop() {
         printf("Game Reset!\n");
         move_count = 0;
         diced = 0;
-        x = 5; //tong 0 / MK 5
-        y = 5; //tong 0 / MK 5
+        x = 0; //tong 0 / MK 5
+        y = 0; //tong 0 / MK 5
         wall_hit = 0;
         turn = 0;
         mode = 0;
@@ -273,7 +288,7 @@ void walk_mode() {
             if (move_count == 0) {
                 diced = 0;
                 wall_hit = 0;
-                turn = 0; // tong 1 / MK 0
+                turn = 1; // tong 1 / MK 0
             }
         }
     }
@@ -296,6 +311,6 @@ void duel_mode() {
         move_count = diceRoll();
         printf("Attack with %d dmg\n", move_count);
         SendData(player, x, y, -1, move_count);
-        turn = 0; //tong 1 / MK 0
+        turn = 1; //tong 1 / MK 0
     }
 }

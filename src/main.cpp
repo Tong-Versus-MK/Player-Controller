@@ -28,9 +28,9 @@ void duel_mode();
 Bounce debouncer_up = Bounce(), debouncer_left = Bounce(), debouncer_down = Bounce(), debouncer_right = Bounce(), debouncer_btn = Bounce();
 int move_count = 0;
 int diced = 0;
-int x = 0, y = 0;
+int x = 5, y = 5;//tong 0,0 / MK 5,5
 int wall_hit = 0;
-const int player = 0;
+const int player = 1;//tong 0 / MK 1
 int turn = 0;
 int mode = 0;
 
@@ -184,14 +184,19 @@ void loop() {
     else if (mode == 1)
         duel_mode();
     else if (mode == 2) {
+        if (turn == player)
+            printf("Congrats!! You Win!!\n");
+        else
+            printf("You lose!! NOOB!\n");
         printf("Game Reset!\n");
         move_count = 0;
         diced = 0;
-        x = 0;
-        y = 0;
+        x = 5; //tong 0 / MK 5
+        y = 5; //tong 0 / MK 5
         wall_hit = 0;
         turn = 0;
         mode = 0;
+        printMaze();
     }
 }
 
@@ -268,7 +273,7 @@ void walk_mode() {
             if (move_count == 0) {
                 diced = 0;
                 wall_hit = 0;
-                turn = 1;
+                turn = 0; // tong 1 / MK 0
             }
         }
     }
@@ -291,6 +296,6 @@ void duel_mode() {
         move_count = diceRoll();
         printf("Attack with %d dmg\n", move_count);
         SendData(player, x, y, -1, move_count);
-        turn = 1;
+        turn = 0; //tong 1 / MK 0
     }
 }

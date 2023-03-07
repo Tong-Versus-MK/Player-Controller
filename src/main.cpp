@@ -37,9 +37,9 @@ void duel_mode();
 Bounce debouncer_up = Bounce(), debouncer_left = Bounce(), debouncer_down = Bounce(), debouncer_right = Bounce(), debouncer_btn = Bounce();
 int move_count = 0;
 int diced = 0;
-int x = 5, y = 5;//tong 0,0 / MK 5,5
+int x = 0, y = 0;//tong 0,0 / MK 5,5
 int wall_hit = 0;
-const int player = 1;//tong 0 / MK 1
+const int player = 0;//tong 0 / MK 1
 int turn = 0;
 int mode = 0;
 int hp = 30;
@@ -164,11 +164,12 @@ void printMaze() {
 void setup() {
     Serial.begin(115200);
     Serial.println("Start...");
-    
+
     if (!OLED.begin(SSD1306_SWITCHCAPVCC, 0x3C)) { // สั่งให้จอ OLED เริ่มทำงานที่ Address 0x3C
-    Serial.println("SSD1306 allocation failed");
-    } else {
-      Serial.println("ArdinoAll OLED Start Work !!!");
+        Serial.println("SSD1306 allocation failed");
+    }
+    else {
+        Serial.println("ArdinoAll OLED Start Work !!!");
     }
 
     debouncer_up.attach(UP, INPUT_PULLUP);
@@ -218,22 +219,37 @@ void loop() {
     else if (mode == 1)
         duel_mode();
     else if (mode == 2) {
-        if (turn == player)
+        OLED.clearDisplay();
+        OLED.setTextColor(WHITE, BLACK);
+        OLED.setCursor(0, 0);
+        OLED.setTextSize(5);
+        if (turn == player) {
+            OLED.print("WIN!!");
             printf("Congrats!! You Win!!\n");
-        else
+        }
+        else {
+            OLED.print("NOOB!!");
             printf("You lose!! NOOB!\n");
+        }
+        OLED.display();
+        delay(3000);
+        OLED.clearDisplay();
+        OLED.setCursor(0, 0);
+        OLED.setTextSize(5);
+        OLED.print("RESET");
         printf("Game Reset!\n");
+        OLED.display();
+        delay(2000);
         move_count = 0;
         diced = 0;
-        x = 5; //tong 0 / MK 5
-        y = 5; //tong 0 / MK 5
+        x = 0; //tong 0 / MK 5
+        y = 0; //tong 0 / MK 5
         wall_hit = 0;
         turn = 0;
         mode = 0;
         printMaze();
     }
 
-    
     OLED.clearDisplay(); // ลบภาพในหน้าจอทั้งหมด
     OLED.setTextColor(WHITE, BLACK);  //กำหนดข้อความสีขาว ฉากหลังสีดำ
     OLED.setCursor(0, 0); // กำหนดตำแหน่ง x,y ที่จะแสดงผล
@@ -325,10 +341,10 @@ void walk_mode() {
             Serial.print(move_count);
             Serial.println(" Move left");
             SendData(player, x, y, wall_hit, move_count);
+            wall_hit = 0;
             if (move_count == 0) {
                 diced = 0;
-                wall_hit = 0;
-                turn = 0; // tong 1 / MK 0
+                turn = 1; // tong 1 / MK 0
             }
         }
     }
@@ -352,6 +368,6 @@ void duel_mode() {
         yourDice = move_count;
         printf("Attack with %d dmg\n", move_count);
         SendData(player, x, y, -1, move_count);
-        turn = 0; //tong 1 / MK 0
+        turn = 1; //tong 1 / MK 0
     }
 }

@@ -8,6 +8,7 @@
 #include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>
 
+#define PLAYER_ID 0 // 0 = Tong, 1 = MK เปลี่ยนแค่ตัวนี้ตัวเดียวพอ
 #define BOARD_SIZE 6
 
 #define UP 27
@@ -37,9 +38,9 @@ void duel_mode();
 Bounce debouncer_up = Bounce(), debouncer_left = Bounce(), debouncer_down = Bounce(), debouncer_right = Bounce(), debouncer_btn = Bounce();
 int move_count = 0;
 int diced = 0;
-int x = 0, y = 0;//tong 0,0 / MK 5,5
+int x = PLAYER_ID ? 5 : 0, y = PLAYER_ID ? 5 : 0;//tong 0,0 / MK 5,5
 int wall_hit = 0;
-const int player = 0;//tong 0 / MK 1
+const int player = PLAYER_ID;//tong 0 / MK 1
 int turn = 0;
 int mode = 0;
 int hp = 30;
@@ -130,8 +131,12 @@ void SendData(int player, int x, int y, int wall_hit, int move_count) {
 }
 /* ESP-NOW Communication Setup END*/
 
-int diceRoll() {
-    int dice = (int)ceil(((double)esp_random() / 4294967295) * 6);
+int diceRoll(int start,int end) {
+    // int dice = (int)ceil(((double)esp_random() / 4294967295) * 6);
+    if(start == end){
+        return start;
+    }
+    int dice = (esp_random() % (end-start)) + start;
     return dice;
 }
 
@@ -283,7 +288,7 @@ void walk_mode() {
     }
     else if (debouncer_btn.fell() && !diced) {
         diced = 1;
-        move_count = diceRoll();
+        move_count = diceRoll(1,6);
         yourDice = move_count;
         Serial.print("You got ");
         Serial.print(move_count);
@@ -353,21 +358,44 @@ void walk_mode() {
     }
 }
 
+int attackOption = 0;
+/*
+0 -> Always rolls 2
+1 -> Rolls 1-4
+2 -> Rolls 0-6
+*/
 void duel_mode() {
-    //debouncer_up.update();
-    //debouncer_left.update();
-    //debouncer_down.update();
-    //debouncer_right.update();
+    debouncer_up.update();
+    debouncer_left.update();
+    debouncer_down.update();
+    debouncer_right.update();
     debouncer_btn.update();
 
-    if ((turn != player) && debouncer_btn.fell()) {
+    if ((turn != player) && (debouncer_up.fell() || debouncer_left.fell() ||  debouncer_down.fell() ||  debouncer_right.fell() || debouncer_btn.fell())) {
         printf("Not your turn!\n");
     }
+    else if (debouncer_up.fell()){
+        attackOption = 0;
+        printf("Option #0 | Test Roll: %d\n",diceRoll(2,2));
+    }
+    else if (debouncer_left.fell()){
+        attackOption = 1;
+        printf("Option #1 | Test Roll: %d\n",diceRoll(1,4));
+    }
+    else if (debouncer_right.fell()){
+        attackOption = 2;
+        printf("Option #2 | Test Roll: %d\n",diceRoll(0,7));
+    }
     else if (debouncer_btn.fell()) {
-        move_count = diceRoll();
+        switch(attackOption){
+            case 0: move_count = diceRoll(2,2); break;
+            case 1: move_count = diceRoll(1,4); break;
+            case 2: move_count = diceRoll(0,7); break;
+        }
+        printf("Option (0-2): %d | Move: %d\n",attackOption,move_count);
         yourDice = move_count;
         printf("Attack with %d dmg\n", move_count);
         SendData(player, x, y, -1, move_count);
-        turn = 1; //tong 1 / MK 0
+        turn = !PLAYER_ID; //tong 1 / MK 0
     }
 }

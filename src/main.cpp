@@ -8,8 +8,8 @@
 #include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>
 
-#define PLAYER_ID 0 // 0 = Tong, 1 = MK เปลี่ยนแค่ตัวนี้ตัวเดียวพอ
-#define BOARD_SIZE 6
+#define PLAYER_ID 1 // 0 = Tong, 1 = MK เปลี่ยนแค่ตัวนี้ตัวเดียวพอ
+#define BOARD_SIZE 8
 
 #define UP 27
 #define LEFT 26
@@ -24,12 +24,14 @@
 Adafruit_SSD1306 OLED(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 
 int MAZE[BOARD_SIZE][BOARD_SIZE] = {
-    {0,1,0,0,0,0},
-    {0,1,0,1,1,0},
-    {0,0,0,1,1,0},
-    {1,1,0,0,0,0},
-    {0,0,0,0,1,0},
-    {0,0,1,0,1,0}
+  {0,1,0,0,0,0,0,0},
+  {0,1,1,1,0,0,1,0},
+  {0,0,0,1,0,0,1,1},
+  {1,1,0,0,0,0,0,0},
+  {0,0,0,0,0,0,0,0},
+  {0,0,1,0,0,1,0,0},
+  {0,1,1,1,0,1,1,0},
+  {0,0,0,0,0,0,1,0}
 };
 
 void walk_mode();
@@ -38,7 +40,7 @@ void duel_mode();
 Bounce debouncer_up = Bounce(), debouncer_left = Bounce(), debouncer_down = Bounce(), debouncer_right = Bounce(), debouncer_btn = Bounce();
 int move_count = 0;
 int diced = 0;
-int x = PLAYER_ID ? 5 : 0, y = PLAYER_ID ? 5 : 0;//tong 0,0 / MK 5,5
+int x = PLAYER_ID ? 7 : 0, y = PLAYER_ID ? 7 : 0;//tong 0,0 / MK 7,7
 int wall_hit = 0;
 const int player = PLAYER_ID;//tong 0 / MK 1
 int turn = 0;
@@ -247,8 +249,7 @@ void loop() {
         delay(2000);
         move_count = 0;
         diced = 0;
-        x = 0; //tong 0 / MK 5
-        y = 0; //tong 0 / MK 5
+        x = PLAYER_ID ? 7 : 0, y = PLAYER_ID ? 7 : 0;   //tong 0,0 / MK 7,7
         wall_hit = 0;
         turn = 0;
         mode = 0;
@@ -272,6 +273,10 @@ void loop() {
     OLED.println(move_count);
     OLED.print("Turn Player : ");
     OLED.println(turn);
+    OLED.print("x : ");
+    OLED.print(x);
+    OLED.print(" y : ");
+    OLED.print(y);
     OLED.display(); // สั่งให้จอแสดงผล
 }
 
@@ -349,7 +354,7 @@ void walk_mode() {
             wall_hit = 0;
             if (move_count == 0) {
                 diced = 0;
-                turn = 1; // tong 1 / MK 0
+                turn = !PLAYER_ID; // tong 1 / MK 0
             }
         }
     }

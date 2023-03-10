@@ -34,6 +34,8 @@ int MAZE[BOARD_SIZE][BOARD_SIZE] = {
   {0,0,0,0,0,0,1,0}
 };
 
+double damageModifier[] = {0,0.5,0.75,1,1.25,1.5,2};
+
 void walk_mode();
 void duel_mode();
 
@@ -382,14 +384,49 @@ void duel_mode() {
     else if (debouncer_up.fell()){
         attackOption = 0;
         printf("Option #0 | Test Roll: %d\n",diceRoll(2,2));
+        OLED.clearDisplay();
+        OLED.setCursor(0, 0);
+        OLED.setTextSize(2);
+        OLED.print("Dice Roll : ");
+        OLED.println("2");
+        OLED.println("Damage : ");
+        OLED.print(atk*damageModifier[2]);
+        OLED.print(" DMG");
+        OLED.display();
+        delay(2000);
+
     }
     else if (debouncer_left.fell()){
         attackOption = 1;
+        OLED.clearDisplay();
+        OLED.setCursor(0, 0);
+        OLED.setTextSize(2);
         printf("Option #1 | Test Roll: %d\n",diceRoll(1,4));
+        OLED.print("Dice Roll: ");
+        OLED.println("1 - 3");
+        OLED.println("Damage : ");
+        OLED.print((int) ceil(atk*damageModifier[1]));
+        OLED.print(" - ");
+        OLED.print((int) ceil(atk*damageModifier[3]));
+        OLED.print(" DMG");
+        OLED.display();
+        delay(2000);
     }
     else if (debouncer_right.fell()){
         attackOption = 2;
+        OLED.clearDisplay();
+        OLED.setCursor(0, 0);
+        OLED.setTextSize(2);
+        OLED.print("Dice Roll: ");
+        OLED.println("0 - 7");
         printf("Option #2 | Test Roll: %d\n",diceRoll(0,7));
+        OLED.println("Damage : ");
+        OLED.print((int) ceil(atk*damageModifier[0]));
+        OLED.print(" - ");
+        OLED.print((int) ceil(atk*damageModifier[6]));
+        OLED.print(" DMG");
+        OLED.display();
+        delay(2000);
     }
     else if (debouncer_btn.fell()) {
         switch(attackOption){
@@ -399,7 +436,15 @@ void duel_mode() {
         }
         printf("Option (0-2): %d | Move: %d\n",attackOption,move_count);
         yourDice = move_count;
-        printf("Attack with %d dmg\n", move_count);
+        // printf("Attack with %d dmg\n", move_count);
+        OLED.clearDisplay();
+        OLED.setCursor(0, 0);
+        OLED.setTextSize(2);
+        OLED.println("Hit With");
+        OLED.print((int) ceil(atk*damageModifier[move_count]));
+        OLED.print(" DMG");
+        OLED.display();
+        delay(2000);
         SendData(player, x, y, -1, move_count);
         turn = !PLAYER_ID; //tong 1 / MK 0
     }

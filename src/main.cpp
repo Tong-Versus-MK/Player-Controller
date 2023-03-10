@@ -78,6 +78,8 @@ esp_now_peer_info_t peerInfo;
 
 uint8_t broadcastAddress[] = { 0x24, 0x0A, 0xC4, 0x9B, 0x8F, 0xEC };
 
+int waitForDisplay=0;
+
 // Callback when data is sent
 void OnDataSent(const uint8_t* mac_addr, esp_now_send_status_t status) {
     Serial.print("\r\nLast Packet Send Status:\t");
@@ -108,6 +110,45 @@ void OnDataRecv(const uint8_t* mac, const uint8_t* incomingData, int len) {
     mode = recv_mess.mode;
 
     if (recv_mess.stat_owner == player || recv_mess.stat_owner == 2) {
+        
+        if (recv_mess.stat_hp < hp && mode != 2) {
+            waitForDisplay=1;
+            OLED.clearDisplay();
+            OLED.setCursor(0,0);
+            OLED.setTextSize(2);
+            OLED.println("GOT HIT");
+            OLED.print(recv_mess.stat_hp - hp);
+            OLED.print(" HP");
+            OLED.display();
+            delay(2000);
+            waitForDisplay=0;
+        }
+        if (recv_mess.stat_hp > hp && mode != 2) {
+            waitForDisplay=1;
+            OLED.clearDisplay();
+            OLED.setCursor(0,0);
+            OLED.setTextSize(2);
+            OLED.println("Obtain!");
+            OLED.print("+");
+            OLED.print(recv_mess.stat_hp - hp);
+            OLED.print(" HP");
+            OLED.display();
+            delay(2000);
+            waitForDisplay=0;
+        }
+        if (recv_mess.stat_atk > atk && mode != 2) {
+            waitForDisplay=1;
+            OLED.clearDisplay();
+            OLED.setCursor(0,0);
+            OLED.setTextSize(2);
+            OLED.println("Obtain!");
+            OLED.print("+");
+            OLED.print(recv_mess.stat_atk - atk);
+            OLED.print(" ATK");
+            OLED.display();
+            delay(2000);
+            waitForDisplay=0;
+        }
         hp = recv_mess.stat_hp;
         atk = recv_mess.stat_atk;
     }
@@ -258,28 +299,30 @@ void loop() {
         printMaze();
     }
 
-    OLED.clearDisplay(); // ลบภาพในหน้าจอทั้งหมด
-    OLED.setTextColor(WHITE, BLACK);  //กำหนดข้อความสีขาว ฉากหลังสีดำ
-    OLED.setCursor(0, 0); // กำหนดตำแหน่ง x,y ที่จะแสดงผล
-    OLED.setTextSize(2); // กำหนดขนาดตัวอักษร
-    OLED.print("Player : ");
-    OLED.println(player);
-    OLED.setTextSize(1);
-    OLED.print("ATK : ");
-    OLED.println(atk);
-    OLED.print("HP : ");
-    OLED.println(hp);
-    OLED.print("Your Dice : ");
-    OLED.println(yourDice);
-    OLED.print("Move Count : ");
-    OLED.println(move_count);
-    OLED.print("Turn Player : ");
-    OLED.println(turn);
-    OLED.print("x : ");
-    OLED.print(x);
-    OLED.print(" y : ");
-    OLED.print(y);
-    OLED.display(); // สั่งให้จอแสดงผล
+    if(!waitForDisplay){
+        OLED.clearDisplay(); // ลบภาพในหน้าจอทั้งหมด
+        OLED.setTextColor(WHITE, BLACK);  //กำหนดข้อความสีขาว ฉากหลังสีดำ
+        OLED.setCursor(0, 0); // กำหนดตำแหน่ง x,y ที่จะแสดงผล
+        OLED.setTextSize(2); // กำหนดขนาดตัวอักษร
+        OLED.print("Player : ");
+        OLED.println(player);
+        OLED.setTextSize(1);
+        OLED.print("ATK : ");
+        OLED.println(atk);
+        OLED.print("HP : ");
+        OLED.println(hp);
+        OLED.print("Your Dice : ");
+        OLED.println(yourDice);
+        OLED.print("Move Count : ");
+        OLED.println(move_count);
+        OLED.print("Turn Player : ");
+        OLED.println(turn);
+        OLED.print("x : ");
+        OLED.print(x);
+        OLED.print(" y : ");
+        OLED.print(y);
+        OLED.display(); // สั่งให้จอแสดงผล
+    }
 }
 
 

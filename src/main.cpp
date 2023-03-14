@@ -8,7 +8,7 @@
 #include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>
 
-#define PLAYER_ID 1 // 0 = Tong, 1 = MK เปลี่ยนแค่ตัวนี้ตัวเดียวพอ
+#define PLAYER_ID 0 // 0 = Tong, 1 = MK เปลี่ยนแค่ตัวนี้ตัวเดียวพอ
 #define BOARD_SIZE 8
 
 #define UP 27
@@ -165,6 +165,7 @@ void SendData(int player, int x, int y, int wall_hit, int move_count) {
     pos_mess.y = y;
     pos_mess.wall_hit = wall_hit;
     pos_mess.move_count = move_count;//in duel mode this value is dice value for attack
+    delay(100);
     esp_err_t result = esp_now_send(broadcastAddress, (uint8_t*)&pos_mess, sizeof(pos_mess));
 
     if (result == ESP_OK) {
@@ -245,7 +246,7 @@ void setup() {
         return;
     }
 
-    esp_now_register_send_cb(OnDataSent);
+    //esp_now_register_send_cb(OnDataSent);
 
     memcpy(peerInfo.peer_addr, broadcastAddress, 6);
     peerInfo.channel = 0;
@@ -479,6 +480,7 @@ void duel_mode() {
         }
         printf("Option (0-2): %d | Move: %d\n",attackOption,move_count);
         yourDice = move_count;
+        SendData(player, x, y, -1, move_count);
         // printf("Attack with %d dmg\n", move_count);
         OLED.clearDisplay();
         OLED.setCursor(0, 0);
@@ -488,7 +490,6 @@ void duel_mode() {
         OLED.print(" DMG");
         OLED.display();
         delay(2000);
-        SendData(player, x, y, -1, move_count);
-        turn = !PLAYER_ID; //tong 1 / MK 0
+        //turn = !PLAYER_ID; //tong 1 / MK 0
     }
 }

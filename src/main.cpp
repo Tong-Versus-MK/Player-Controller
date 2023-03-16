@@ -8,7 +8,14 @@
 #include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>
 
-#define PLAYER_ID 0 // 0 = Tong, 1 = MK เปลี่ยนแค่ตัวนี้ตัวเดียวพอ
+//fix this--------------fix this//
+#define PLAYER_ID 1 // 0 = Tong, 1 = MK เปลี่ยนแค่ตัวนี้ตัวเดียวพอ
+//fix this--------------fix this//
+
+//Active for debug
+#define DEBUG1 mode=1;
+#define DEBUG2 turn=1;
+
 #define BOARD_SIZE 8
 
 #define UP 27
@@ -21,6 +28,10 @@
 #define SCREEN_WIDTH 128 // pixel ความกว้าง
 #define SCREEN_HEIGHT 64 // pixel ความสูง 
 #define OLED_RESET     -1
+
+
+
+
 Adafruit_SSD1306 OLED(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 
 int MAZE[BOARD_SIZE][BOARD_SIZE] = {
@@ -59,6 +70,11 @@ typedef struct struct_message {
     int move_count;
 } struct_message;
 
+typedef struct struct_player{
+    int hit;
+    int hp;
+}struct_player;
+
 //turn 0=Tong 1=MK
 //mode 0=walk 1=Duel 2=End
 typedef struct recv_message {
@@ -72,11 +88,16 @@ typedef struct recv_message {
 
 struct_message pos_mess;
 recv_message recv_mess;
+struct_player player_mess;
 
 String success;
 esp_now_peer_info_t peerInfo;
+esp_now_peer_info_t peerInfo2;
 
 uint8_t broadcastAddress[] = { 0x24, 0x0A, 0xC4, 0x9B, 0x8F, 0xEC };
+uint8_t broadcastAddressPlayer[2][6] = {{ 0x3C, 0x71, 0xBF, 0x10, 0x5C, 0x3C },
+                                        { 0x3C, 0x61, 0x05, 0x03, 0xA2, 0x74 }};
+
 
 int waitForDisplay=0;
 
@@ -152,6 +173,7 @@ void OnDataRecv(const uint8_t* mac, const uint8_t* incomingData, int len) {
         hp = recv_mess.stat_hp;
         atk = recv_mess.stat_atk;
     }
+    SendDataPlayer(0,hp);
     printf("Player %d\n", player);
     printf("HP: %d\n", hp);
     printf("ATK: %d\n", atk);
@@ -176,6 +198,20 @@ void SendData(int player, int x, int y, int wall_hit, int move_count) {
     }
 }
 /* ESP-NOW Communication Setup END*/
+
+void SendDataPlayer(int hit,int hp){
+    player_mess.hit=1;
+    player_mess.hp=hp;
+    delay(100);
+    esp_err_t result = esp_now_send(broadcastAddressPlayer[PLAYER_ID], (uint8_t*)&player_mess, sizeof(player_mess));
+
+    if (result == ESP_OK) {
+        Serial.println("Sent Hit with success");
+    }
+    else {
+        Serial.println("Error sending the data");
+    }
+}
 
 int diceRoll(int start,int end) {
     // int dice = (int)ceil(((double)esp_random() / 4294967295) * 6);
@@ -254,6 +290,15 @@ void setup() {
 
     if (esp_now_add_peer(&peerInfo) != ESP_OK) {
         Serial.println("Failed to add peer");
+        return;
+    }
+
+    memcpy(peerInfo2.peer_addr, broadcastAddressPlayer[PLAYER_ID], 6);
+    peerInfo2.channel = 0;
+    peerInfo2.encrypt = false;
+
+    if (esp_now_add_peer(&peerInfo2) != ESP_OK) {
+        Serial.println("Failed to add peer 2");
         return;
     }
 
@@ -481,6 +526,7 @@ void duel_mode() {
         printf("Option (0-2): %d | Move: %d\n",attackOption,move_count);
         yourDice = move_count;
         SendData(player, x, y, -1, move_count);
+        SendDataPlayer(1,hp);
         // printf("Attack with %d dmg\n", move_count);
         OLED.clearDisplay();
         OLED.setCursor(0, 0);

@@ -308,8 +308,14 @@ void setup() {
 }
 
 int yourDice;
-
+#define LED1 13
 void loop() {
+    if (turn==player) {
+        digitalWrite(LED1,HIGH);
+    }
+    else {
+        digitalWrite(LED1,LOW);
+    }
     if (mode == 0)
         walk_mode();
     else if (mode == 1)

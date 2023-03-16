@@ -9,12 +9,9 @@
 #include <Adafruit_SSD1306.h>
 
 //fix this--------------fix this//
-#define PLAYER_ID 1 // 0 = Tong, 1 = MK เปลี่ยนแค่ตัวนี้ตัวเดียวพอ
+#define PLAYER_ID 0 // 0 = Tong, 1 = MK เปลี่ยนแค่ตัวนี้ตัวเดียวพอ
 //fix this--------------fix this//
 
-//Active for debug
-#define DEBUG1 mode=1;
-#define DEBUG2 turn=1;
 
 #define BOARD_SIZE 8
 
@@ -49,6 +46,7 @@ double damageModifier[] = {0,0.5,0.75,1,1.25,1.5,2};
 
 void walk_mode();
 void duel_mode();
+void SendDataPlayer(int hit,int hp);
 
 Bounce debouncer_up = Bounce(), debouncer_left = Bounce(), debouncer_down = Bounce(), debouncer_right = Bounce(), debouncer_btn = Bounce();
 int move_count = 0;
@@ -172,8 +170,8 @@ void OnDataRecv(const uint8_t* mac, const uint8_t* incomingData, int len) {
         }
         hp = recv_mess.stat_hp;
         atk = recv_mess.stat_atk;
+        SendDataPlayer(0,hp);
     }
-    SendDataPlayer(0,hp);
     printf("Player %d\n", player);
     printf("HP: %d\n", hp);
     printf("ATK: %d\n", atk);
@@ -305,16 +303,19 @@ void setup() {
     esp_now_register_recv_cb(OnDataRecv);
 
     printMaze();
+    pinMode(13,OUTPUT);
+    digitalWrite(13,0);
 }
 
 int yourDice;
 #define LED1 13
 void loop() {
     if (turn==player) {
-        digitalWrite(LED1,HIGH);
+        digitalWrite(LED1,1);
     }
     else {
-        digitalWrite(LED1,LOW);
+        digitalWrite(LED1,0);
+    Serial.print(turn);
     }
     if (mode == 0)
         walk_mode();

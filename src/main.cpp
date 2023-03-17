@@ -198,7 +198,7 @@ void SendData(int player, int x, int y, int wall_hit, int move_count) {
 /* ESP-NOW Communication Setup END*/
 
 void SendDataPlayer(int hit,int hp){
-    player_mess.hit=1;
+    player_mess.hit=hit;
     player_mess.hp=hp;
     delay(100);
     esp_err_t result = esp_now_send(broadcastAddressPlayer[PLAYER_ID], (uint8_t*)&player_mess, sizeof(player_mess));
@@ -211,12 +211,44 @@ void SendDataPlayer(int hit,int hp){
     }
 }
 
+void writeOLED(char *text){
+    OLED.clearDisplay(); // ลบภาพในหน้าจอทั้งหมด
+    OLED.setTextColor(WHITE, BLACK);  //กำหนดข้อความสีขาว ฉากหลังสีดำ
+    OLED.setCursor(45, 10); // กำหนดตำแหน่ง x,y ที่จะแสดงผล
+    OLED.setTextSize(7); // กำหนดขนาดตัวอักษร
+    OLED.print(text);
+    OLED.display();
+}
+
 int diceRoll(int start,int end) {
     // int dice = (int)ceil(((double)esp_random() / 4294967295) * 6);
     if(start == end){
         return start;
     }
-    int dice = (esp_random() % (end-start)) + start;
+    char num[2];
+    int dice;
+    for(int i=0;i<20;i++){
+        dice = (esp_random() % (end-start+1)) + start;
+        sprintf(num,"%d",dice);
+        writeOLED(num);
+        delay(i*10);
+    }
+
+    writeOLED(num);
+    delay(500);
+    OLED.clearDisplay();
+    OLED.display();
+    delay(500);
+
+    writeOLED(num);
+    delay(500);
+    OLED.clearDisplay();
+    OLED.display();
+    delay(500);
+    
+    writeOLED(num);
+    delay(1000);
+
     return dice;
 }
 
@@ -301,11 +333,14 @@ void setup() {
     }
 
     esp_now_register_recv_cb(OnDataRecv);
+    OLED.clearDisplay();
 
     printMaze();
     pinMode(13,OUTPUT);
     digitalWrite(13,0);
 }
+
+
 
 int yourDice;
 #define LED1 13
@@ -315,7 +350,6 @@ void loop() {
     }
     else {
         digitalWrite(LED1,0);
-    Serial.print(turn);
     }
     if (mode == 0)
         walk_mode();
@@ -347,9 +381,10 @@ void loop() {
         diced = 0;
         x = PLAYER_ID ? 7 : 0, y = PLAYER_ID ? 7 : 0;   //tong 0,0 / MK 7,7
         wall_hit = 0;
-        turn = 0;
-        mode = 0;
+        //turn = 0;
+        //mode = 0;
         printMaze();
+        while(mode!=0);
     }
 
     if(!waitForDisplay){
@@ -357,27 +392,28 @@ void loop() {
         OLED.setTextColor(WHITE, BLACK);  //กำหนดข้อความสีขาว ฉากหลังสีดำ
         OLED.setCursor(0, 0); // กำหนดตำแหน่ง x,y ที่จะแสดงผล
         OLED.setTextSize(2); // กำหนดขนาดตัวอักษร
-        OLED.print("Player : ");
-        OLED.println(player);
+        OLED.println(player ? "MK" : "TONG");
+        OLED.print("x: ");
+        OLED.print(x);
+        OLED.print(" y: ");
+        OLED.println(y);
         OLED.setTextSize(1);
+        OLED.println("-------------------");
         OLED.print("ATK : ");
         OLED.println(atk);
-        OLED.print("HP : ");
-        OLED.println(hp);
+        // OLED.print("HP : ");
+        // OLED.println(hp);
         OLED.print("Your Dice : ");
         OLED.println(yourDice);
         OLED.print("Move Count : ");
         OLED.println(move_count);
-        OLED.print("Turn Player : ");
-        OLED.println(turn);
-        OLED.print("x : ");
-        OLED.print(x);
-        OLED.print(" y : ");
-        OLED.print(y);
+       
+        // OLED.print("Turn Player : ");
+        // OLED.println(turn);
+        
         OLED.display(); // สั่งให้จอแสดงผล
     }
 }
-
 
 void walk_mode() {
     debouncer_up.update();
@@ -486,7 +522,7 @@ void duel_mode() {
         OLED.print("Dice Roll : ");
         OLED.println("2");
         OLED.println("Damage : ");
-        OLED.print(atk*damageModifier[2]);
+        OLED.print(ceil(atk*damageModifier[2]));
         OLED.print(" DMG");
         OLED.display();
         delay(2000);
@@ -497,7 +533,7 @@ void duel_mode() {
         OLED.clearDisplay();
         OLED.setCursor(0, 0);
         OLED.setTextSize(2);
-        printf("Option #1 | Test Roll: %d\n",diceRoll(1,4));
+        printf("Option #1\n");
         OLED.print("Dice Roll: ");
         OLED.println("1 - 3");
         OLED.println("Damage : ");
@@ -515,7 +551,7 @@ void duel_mode() {
         OLED.setTextSize(2);
         OLED.print("Dice Roll: ");
         OLED.println("0 - 7");
-        printf("Option #2 | Test Roll: %d\n",diceRoll(0,7));
+        printf("Option #2\n");
         OLED.println("Damage : ");
         OLED.print((int) ceil(atk*damageModifier[0]));
         OLED.print(" - ");
@@ -528,7 +564,7 @@ void duel_mode() {
         switch(attackOption){
             case 0: move_count = diceRoll(2,2); break;
             case 1: move_count = diceRoll(1,4); break;
-            case 2: move_count = diceRoll(0,7); break;
+            case 2: move_count = diceRoll(0,6); break;
         }
         printf("Option (0-2): %d | Move: %d\n",attackOption,move_count);
         yourDice = move_count;
@@ -543,6 +579,9 @@ void duel_mode() {
         OLED.print(" DMG");
         OLED.display();
         delay(2000);
+        while(turn==PLAYER_ID){
+            if(mode == 2) break;
+        }
         //turn = !PLAYER_ID; //tong 1 / MK 0
     }
 }

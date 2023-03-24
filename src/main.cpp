@@ -522,7 +522,7 @@ void duel_mode() {
         OLED.print("Dice Roll : ");
         OLED.println("2");
         OLED.println("Damage : ");
-        OLED.print(ceil(atk*damageModifier[2]));
+        OLED.print((int) ceil(atk*damageModifier[2]));
         OLED.print(" DMG");
         OLED.display();
         delay(2000);
